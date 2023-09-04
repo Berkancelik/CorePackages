@@ -10,7 +10,8 @@ using System.Threading.Tasks;
 
 namespace CorePersistance.Repositories
 {
-    public interface IAsyncRepository<TEntity, TEntityId> where TEntityId : Entity<TEntityId>
+    public interface IAsyncRepository<TEntity, TEntityId> : IQuery<TEntity>
+        where TEntity : Entity<TEntityId>
     {
         Task<TEntity?> GetAsync(
             Expression<Func<TEntity, bool>> predicate,
@@ -61,4 +62,3 @@ namespace CorePersistance.Repositories
         Task<ICollection<TEntity>> DeleteRangeAsync(ICollection<TEntity> entities, bool permanent = false);
 
     }
-}
