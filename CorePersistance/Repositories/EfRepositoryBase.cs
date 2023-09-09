@@ -17,7 +17,7 @@ namespace CorePersistance.Repositories
 {
     public class EfRepositoryBase<TEntity, TEntityId, TContext>
      : IAsyncRepository<TEntity, TEntityId>, IRepository<TEntity, TEntityId>
-     where TEntity : Entity<TEntityId> 
+     where TEntity : Entity<TEntityId>
      where TContext : DbContext
     {
         protected readonly TContext Context;
@@ -283,3 +283,4 @@ namespace CorePersistance.Repositories
             throw new NotImplementedException();
         }
     }
+}
