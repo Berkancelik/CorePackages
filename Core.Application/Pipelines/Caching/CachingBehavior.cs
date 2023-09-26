@@ -2,23 +2,24 @@
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Core.Application.Pipelines.Caching
 {
-    public class CachinBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICachableRequest
+    public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICachableRequest
     {
         private readonly CacheSettings _cacheSettings;
         private readonly IDistributedCache _cache;
 
-        public CachinBehavior(CacheSettings cacheSettings, IDistributedCache cache)
+        public CachingBehavior(CacheSettings cacheSettings, IDistributedCache cache)
         {
             _cacheSettings = cacheSettings;
             _cache = cache;
         }
+
+        
 
         public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
         {
@@ -30,38 +31,29 @@ namespace Core.Application.Pipelines.Caching
             byte[]? cachedResponse = await _cache.GetAsync(request.CacheKey, cancellationToken);
             if (cachedResponse != null)
             {
-                response = JsonSerializer.Deserialize<TResponse>(Encoding.Default.GetString(cachedResponse));
+                string cachedResponseString = Encoding.Default.GetString(cachedResponse);
+                response = JsonConvert.DeserializeObject<TResponse>(cachedResponseString);
             }
             else
             {
-                    response = await getResponseAndAddToCache(request,next,cancellationToken);    
+                response = await GetResponseAndAddToCache(request, next, cancellationToken);
             }
             return response;
-         }
+        }
 
-
-        private async Task<TResponse?> getResponseAndAddToCache(
-        TRequest request,
-        RequestHandlerDelegate<TResponse> next,
-        CancellationToken cancellationToken)
+        private async Task<TResponse> GetResponseAndAddToCache(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
         {
             TResponse response = await next();
 
             TimeSpan slidingExpiration = request.SlidingExpiration ?? TimeSpan.FromDays(_cacheSettings.SlidingExpiration);
             DistributedCacheEntryOptions cacheOptions = new() { SlidingExpiration = slidingExpiration };
 
-            byte[] serializedData = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(response));
+            string serializedData = JsonConvert.SerializeObject(response);
+            byte[] serializedDataBytes = Encoding.UTF8.GetBytes(serializedData);
 
-            await _cache.SetAsync(request.CacheKey, serializedData, cacheOptions, cancellationToken);
- 
-  
+            await _cache.SetAsync(request.CacheKey, serializedDataBytes, cacheOptions, cancellationToken);
+
             return response;
-        }
-
-
-        private Task<TResponse?> GetResponseAndAddToCache(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
         }
     }
 }
