@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.Text;
@@ -13,13 +14,13 @@ namespace Core.Application.Pipelines.Caching
         private readonly CacheSettings _cacheSettings;
         private readonly IDistributedCache _cache;
 
-        public CachingBehavior(CacheSettings cacheSettings, IDistributedCache cache)
+        public CachingBehavior(CacheSettings cacheSettings, IDistributedCache cache, IConfiguration configuration)
         {
-            _cacheSettings = cacheSettings;
+            _cacheSettings = configuration.GetSection("CacheSettings").Get<CacheSettings>() ?? throw new InvalidOperationException();
             _cache = cache;
         }
 
-        
+
 
         public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
         {
