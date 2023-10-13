@@ -11,7 +11,6 @@ namespace Core.Application.Pipelines.Caching
         string CacheKey { get; }
         bool BypassCache { get; }
 
-        string? CacheGroupKey { get; set; }
         TimeSpan? SlidingExpiration { get; }
     }
 }
